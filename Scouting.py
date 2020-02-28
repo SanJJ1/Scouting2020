@@ -10,10 +10,10 @@ from scipy import stats
 
 dataSource = "feed.xml"
 # Extracts the valuable data from the RSS Feed
-allData = [x['summary_detail']['value'].split("\n") + [x['title']] for x in feedparser.parse(dataSource)['entries']]
+allMatches = [x['summary_detail']['value'].split("\n") + [x['title']] for x in feedparser.parse(dataSource)['entries']]
 
-for i in allData:  # Formats AllData, getting rid of unnecessary
-    for x in range(10):  # Markup syntax
+for i in allMatches:  # Formats AllData, getting rid of unnecessary markup syntax
+    for x in range(10):
         if str(x) in "01235678":
             i[x] = ''.join(c for c in i[x] if c.isdigit())
             if x % 5 == 0:
@@ -26,99 +26,228 @@ def pointsScored(team):
     """tells you the average points scored of each alliance that a specified team was part of"""
     team = str(team)
     teamScores = []
-    for i in allData:
-        if team in i[1:4]:
-            teamScores.append(i[0])
-        elif team in i[5:8]:
-            teamScores.append(i[4])
-    return statistics.mean([int(i) for i in teamScores])
+    for match in allMatches:
+        if team in match[1:4]:
+            teamScores.append(match[0])
+        elif team in match[5:8]:
+            teamScores.append(match[4])
+    return statistics.mean([int(score) for score in teamScores])
 
 
-def oppPointsScored(team):
+def pointsAllowed(team):
     """tells you the average points scored of each opposing alliance that a specified team played against"""
     team = str(team)
     teamScores = []
-    for i in allData:
-        if team in i[1:4]:
-            teamScores.append(i[4])
-        elif team in i[5:8]:
-            teamScores.append(i[0])
-    return statistics.mean([int(i) for i in teamScores])
+    for match in allMatches:
+        if team in match[1:4]:
+            teamScores.append(match[4])
+        elif team in match[5:8]:
+            teamScores.append(match[0])
+    return statistics.mean([int(score) for score in teamScores])
 
 
-def teammateAvgScore(team):
+def opp(team):
+    team = str(team)
+    opps = []
+    for match in allMatches:
+        if team in match[1:4]:
+            opps.extend(match[5:8])
+        elif team in match[5:8]:
+            opps.extend(match[1:4])
+    return statistics.mean(pointsScored(team) for team in opps)
+
+
+def teammate(team):
     """gives you the average of each of this team's teammates averages."""
     team = str(team)
     teammates = []
-    for i in allData:
-        if team in i[1:4]:
-            x = i[1:4]
+    for match in allMatches:
+        if team in match[1:4]:
+            x = match[1:4]
             x.remove(team)
             teammates.extend(x)
-        if team in i[5:8]:
-            x = i[5:8]
+        if team in match[5:8]:
+            x = match[5:8]
             x.remove(team)
             teammates.extend(x)
-    return statistics.mean([pointsScored(i) for i in teammates])
+    return statistics.mean([pointsScored(team) for team in teammates])
+
+
+def teammateTeammate(team):
+    team = str(team)
+    teammates = []
+    for match in allMatches:
+        if team in match[1:4]:
+            x = match[1:4]
+            x.remove(team)
+            teammates.extend(x)
+        if team in match[5:8]:
+            x = match[5:8]
+            x.remove(team)
+            teammates.extend(x)
+    return statistics.mean([teammate(team) for team in teammates])
+
+
+def teammateOpp(team):
+    team = str(team)
+    teammates = []
+    for match in allMatches:
+        if team in match[1:4]:
+            x = match[1:4]
+            x.remove(team)
+            teammates.extend(x)
+        if team in match[5:8]:
+            x = match[5:8]
+            x.remove(team)
+            teammates.extend(x)
+    return statistics.mean([opp(team) for team in teammates])
+
+
+def teammateAllowed(team):
+    """gives you the average of each of this team's teammates averages."""
+    team = str(team)
+    teammates = []
+    for match in allMatches:
+        if team in match[1:4]:
+            x = match[1:4]
+            x.remove(team)
+            teammates.extend(x)
+        if team in match[5:8]:
+            x = match[5:8]
+            x.remove(team)
+            teammates.extend(x)
+    return statistics.mean([pointsScored(team) for team in teammates])
+
+
+def oppTeammate(team):
+    team = str(team)
+    opps = []
+    for match in allMatches:
+        if team in match[1:4]:
+            opps.extend(match[5:8])
+        elif team in match[5:8]:
+            opps.extend(match[1:4])
+    return statistics.mean(teammate(team) for team in opps)
+
+
+def oppOpp(team):
+    team = str(team)
+    opps = []
+    for match in allMatches:
+        if team in match[1:4]:
+            opps.extend(match[5:8])
+        elif team in match[5:8]:
+            opps.extend(match[1:4])
+    return statistics.mean(opp(team) for team in opps)
+
+
+def oppAllowed(team):
+    team = str(team)
+    opps = []
+    for match in allMatches:
+        if team in match[1:4]:
+            opps.extend(match[5:8])
+        elif team in match[5:8]:
+            opps.extend(match[1:4])
+    return statistics.mean(pointsAllowed(team) for team in opps)
 
 
 def none(team):
     return int(team)
 
 
-betas = [0, .814521, -.1287542354, 0, .566211975, 0, 0, 0, 0, 0, 0]
-functions = [none, pointsScored, oppPointsScored, none, teammateAvgScore, none, none, none, none, none, none]
+functions = [none,
+             pointsScored,
+             pointsAllowed,
+             opp,
+             teammate,
+             teammateTeammate,
+             teammateOpp,
+             teammateAllowed,
+             oppTeammate,
+             oppOpp,
+             oppAllowed]
+
+
+# yourself -->                  (your offense capability)
+# yourself --> teammates -->    (ability of teammates)
+# yourself --> opponents -->    (difficulty of opponents)
+# yourself --> allowed   -->    (your defense capability)
+# yourself --> teammates --> teammates -->
+# yourself --> teammates --> opponents -->
+# yourself --> teammates --> allowed   -->
+# yourself --> opponents --> teammates -->
+# yourself --> opponents --> opponents -->
+# yourself --> opponents --> allowed   -->
+
 
 # Calculates the full score for a team
 # using dot product. (Multiplies each
 # Beta value with each function output
 # and adds them up).
 def calculate(team):
-    values = [i(team) for i in functions]
+    values = [function(team) for function in functions]
     return np.dot(betas, values)
 
 
-def winPercentage(team):  # Gets the win percentage for a
-    gamesPlayed = 0  # particular team. Used as x
-    gamesWon = 0  # axis variable in all regressions
+def winPercentage(team):  # Gets the win percentage for a particular team
+    gamesPlayed = 0
+    gamesWon = 0
     team = str(team)
-    for i in allData:
-        if team in i[1:4]:
+    winner = -2
+    for match in allMatches:
+        if team in match[1:4]:
             gamesPlayed += 1
-            if i[-2] == "Red":
+            if match[winner] == "Red":
                 gamesWon += 1
-        elif team in i[5:8]:
+        elif team in match[5:8]:
             gamesPlayed += 1
-            if i[-2] == "Blue":
+            if match[winner] == "Blue":
                 gamesWon += 1
     return gamesWon / gamesPlayed
 
 
 teams = []  # Gets a list of all the teams,
-for i in allData:  # useful for showing calculation
+for i in allMatches:  # useful for showing calculation
     for x in i[1:4] + i[5:8]:  # results
         if x not in teams:
             teams.append(x)
 
-teams.sort(key=lambda i: calculate(i))  # Shows each team's score
-print([int(i) for i in teams])
-print([round(calculate(i), 1) for i in teams])
-
-for j in functions:  # Calculates correlation strength (r)
-    x = np.array([winPercentage(i) for i in teams])  # with every term. r ends up being the
-    y = np.array([j(i) for i in teams])  # beta coefficient for each term.
-
-    slope, intercept, r, p, std_err = stats.linregress(x, y)  # creates OLS regression
-    print(r)
+# teams.sort(key=lambda i: calculate(i))  # Shows each team's score
+# print([int(i) for i in teams])
+# print([round(calculate(i), 1) for i in teams])
 
 
 def lineFit(b):
     return intercept + slope * b
 
 
-line1 = lineFit(x)
+betas = [0]
+for j in functions:  # Calculates correlation strength (r)
+    if j != none:
+        x = np.array([winPercentage(i) for i in teams])  # with every term. r ends up being the
+        y = np.array([j(i) for i in teams])  # beta coefficient for each term.
 
-# plots data on graph with line of best fit
-# plt.scatter(x, y)
-# plt.plot(x, line1, c='g')
-# plt.show()
+        slope, intercept, r, p, std_err = stats.linregress(x, y)  # creates OLS regression
+        # plt.scatter(x, y)
+        # line1 = lineFit(x)
+        # plt.plot(x, line1, c='g')
+        # plt.show()
+        print("Correlation Strength of", str(j)[10:-23], ": ", r)
+        betas.append(r)
+
+
+teamsToRatings = {}
+for i in teams:
+    teamsToRatings[i] = calculate(i)
+
+x = np.array([winPercentage(team) for team in teams])
+y = np.array([teamsToRatings[i] for i in teams])
+
+slope, intercept, r, p, std_err = stats.linregress(x, y)  # creates OLS regression
+print("Composite Correlation Strength: ", r)
+betas.append(r)
+
+teams.sort(key=lambda team: teamsToRatings[team])
+print([int(i) for i in teams])
+print([round(teamsToRatings[i], 1) for i in teams])
