@@ -6,9 +6,10 @@ from scipy import stats
 import math
 
 
-# The source for the RSS feed for the match. May be downloaded locally,
-# or a web link for live data and updates. ANY RSS Feed posted on Blue
-# Alliance may be entered here to be analyzed.
+# The source for the RSS feed for the match. May be downloaded locally, or a web link for live data and updates. ANY
+# RSS Feed posted on Blue Alliance may be entered here to be analyzed. If you get the error: "ValueError: Inputs must
+# not be empty.", you are most likely not accessing the Match RSS Feed properly. I have included three match RSS
+# Feeds in case.
 dataSource = "https://www.thebluealliance.com/event/2020ohmv/feed"
 
 
