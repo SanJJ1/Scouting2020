@@ -254,6 +254,7 @@ for i in allMatches:
             teams.append(x)
 
 
+# Calculates the correlation r value between an input function of a team and win percentage for teams.
 def corr(function):
     x = np.array([winPercentage(i) for i in teams])  # with every term. r ends up being the
     y = np.array([function(i) for i in teams])  # beta coefficient for each term.
@@ -261,14 +262,14 @@ def corr(function):
     return r
 
 
+# Sets the weight of each term to its win rate correlation^7. The reason the correlation is exponentiated is so that
+# those terms with low correlation play a negligible role in the equation.
 weights = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-iterator = 0
 for j in functions:
     if j != none:
         r = corr(j)
         print("Correlation Strength of", str(j)[10:-23], ": ", r)
-        weights[iterator] *= math.pow(r, 7)
-        iterator += 1
+        weights[functions.index(j)] *= math.pow(r, 7)
 
 
 # The full equation has 11 terms. 10 of them are the last 10 functions in the functions array, and the last is a
