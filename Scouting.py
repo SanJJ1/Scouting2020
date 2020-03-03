@@ -254,7 +254,7 @@ for i in allMatches:
             teams.append(x)
 
 
-# Calculates the correlation r value between an input function of a team and win percentage for teams.
+# Calculates the correlation r value between an input function of a team and win percentage for that team
 def corr(function):
     x = np.array([winPercentage(i) for i in teams])  # with every term. r ends up being the
     y = np.array([function(i) for i in teams])  # beta coefficient for each term.
